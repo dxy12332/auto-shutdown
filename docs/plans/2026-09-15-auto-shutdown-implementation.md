@@ -428,7 +428,7 @@ git commit -m "feat: 项目骨架与配置模块（含容错与原子写入）"
 **Interfaces:**
 - Consumes: 无（仅标准库）
 - Produces:
-  - `app.power.Command` dataclass（frozen）：`argv: list[str]`、`description: str`、`via_api: bool = False`
+  - `app.power.Command` dataclass（frozen）：`argv: list[str]`、`description: str`、`via_api: bool = False`、`hibernate: bool = False`
   - `app.power.SYSTEM_SCHEDULABLE: tuple[str, ...]` = `("shutdown", "restart")`
   - `app.power.supports_system_abort(action: str) -> bool`
   - `app.power.build_arm_command(action: str, grace_seconds: int, force: bool) -> Command`
@@ -446,10 +446,11 @@ git commit -m "feat: 项目骨架与配置模块（含容错与原子写入）"
 `tests/test_power.py`：
 
 ```python
+import logging
+
 import pytest
 
 from app.power import (
-    Command,
     PowerExecutor,
     build_abort_command,
     build_arm_command,
@@ -517,6 +518,7 @@ def test_build_now_command_rejects_unknown_action():
 
 
 def test_dry_run_never_calls_runner(caplog):
+    caplog.set_level(logging.INFO)
     calls = []
     executor = PowerExecutor(dry_run=True, runner=lambda argv: calls.append(argv) or 0)
 
@@ -528,6 +530,7 @@ def test_dry_run_never_calls_runner(caplog):
 
 
 def test_dry_run_abort_is_logged_not_executed(caplog):
+    caplog.set_level(logging.INFO)
     calls = []
     executor = PowerExecutor(dry_run=True, runner=lambda argv: calls.append(argv) or 0)
     executor.abort()
@@ -624,6 +627,7 @@ class Command:
     argv: list[str]
     description: str
     via_api: bool = False
+    hibernate: bool = False
 
 
 def supports_system_abort(action: str) -> bool:
@@ -662,7 +666,12 @@ def build_now_command(action: str, force: bool) -> Command:
         return Command(argv=["shutdown.exe", "/l"], description="立即注销")
 
     # sleep / hibernate
-    return Command(argv=[], description=f"立即{label}", via_api=True)
+    return Command(
+        argv=[],
+        description=f"立即{label}",
+        via_api=True,
+        hibernate=(action == "hibernate"),
+    )
 
 
 def hibernate_available() -> bool:
@@ -698,9 +707,9 @@ def _call_set_suspend_state(hibernate: bool) -> bool:
         logger.exception("加载 powrprof.dll 失败")
         return False
     try:
-        # 参数：(bHibernate, bForce, bWakeupEventsDisabled)
-        ctypes.windll.kernel32.SetThreadExecutionState(0x80000000 | 0x00000001)
-        return bool(powrprof.SetSuspendState(1 if hibernate else 0, 0, 0))
+        # SetSuspendState 返回非零表示成功；参数为 (bHibernate, bForce, bWakeupEventsDisabled)
+        result = powrprof.SetSuspendState(1 if hibernate else 0, 0, 0)
+        return bool(result)
     except Exception:
         logger.exception("SetSuspendState 调用失败")
         return False
@@ -734,7 +743,7 @@ class PowerExecutor:
             return True
 
         if command.via_api:
-            return _call_set_suspend_state(command.description.endswith("休眠"))
+            return _call_set_suspend_state(command.hibernate)
 
         try:
             code = self._runner(command.argv)
