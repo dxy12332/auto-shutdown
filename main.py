@@ -14,7 +14,14 @@ from app.autostart import Autostart
 from app.config import ConfigStore
 from app.confirm import ConfirmDialog
 from app.formatting import format_remaining
-from app.paths import CONFIG_PATH, ICON_PATH, LAUNCH_TARGET, LAUNCH_WORKDIR, LOG_PATH
+from app.paths import (
+    CONFIG_PATH,
+    DATA_DIR,
+    ICON_PATH,
+    LAUNCH_TARGET,
+    LAUNCH_WORKDIR,
+    LOG_PATH,
+)
 from app.power import PowerExecutor, supports_system_abort
 from app.scheduler import Scheduler
 from app.tray import TrayIcon
@@ -29,6 +36,11 @@ def setup_logging() -> None:
     # Windows 控制台默认是 GBK，中文日志会乱码。日志文件本身始终用 UTF-8。
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+
+    # 打包后数据目录首次运行时并不存在。必须先建出来，否则 FileHandler
+    # 创建日志文件会失败，而 logging 会静默吞掉这个错误（GUI 模式没有
+    # stderr 可打印），最终结果是日志全部丢失、用户无从排查。
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
     logging.basicConfig(
         level=logging.INFO,
