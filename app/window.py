@@ -43,6 +43,10 @@ ACTION_LABELS_CN = {value: label for value, label in ACTION_OPTIONS}
 
 QUICK_MINUTES = ((30, "30 分钟"), (60, "1 小时"), (120, "2 小时"))
 
+#: 自定义分钟的合法范围：1 分钟到 24 小时
+MIN_CUSTOM_MINUTES = 1
+MAX_CUSTOM_MINUTES = 1440
+
 
 class MainWindow(QMainWindow):
     theme_changed = Signal(str)
@@ -143,14 +147,35 @@ class MainWindow(QMainWindow):
         label.setObjectName("SectionTitle")
         return label
 
-    def _build_quick_row(self) -> QHBoxLayout:
-        row = QHBoxLayout()
-        row.setSpacing(8)
+    def _build_quick_row(self) -> QVBoxLayout:
+        column = QVBoxLayout()
+        column.setSpacing(8)
+
+        presets = QHBoxLayout()
+        presets.setSpacing(8)
         for minutes, label in QUICK_MINUTES:
             button = QPushButton(label)
             button.clicked.connect(lambda _=False, m=minutes: self._apply_quick(m))
-            row.addWidget(button)
-        return row
+            presets.addWidget(button)
+        column.addLayout(presets)
+
+        custom = QHBoxLayout()
+        custom.setSpacing(8)
+        custom.addWidget(QLabel("自定义"))
+        self._custom_minutes = QSpinBox()
+        self._custom_minutes.setRange(MIN_CUSTOM_MINUTES, MAX_CUSTOM_MINUTES)
+        self._custom_minutes.setValue(15)
+        self._custom_minutes.setSuffix(" 分钟")
+        custom.addWidget(self._custom_minutes)
+
+        custom_set = QPushButton("设定")
+        custom_set.setObjectName("Primary")
+        custom_set.clicked.connect(lambda: self._apply_quick(self._custom_minutes.value()))
+        custom.addWidget(custom_set)
+        custom.addStretch(1)
+        column.addLayout(custom)
+
+        return column
 
     def _build_oneoff_row(self) -> QHBoxLayout:
         row = QHBoxLayout()
