@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
 from app.autostart import Autostart
 from app.config import GRACE_MAX, GRACE_MIN, ConfigStore
 from app.formatting import format_remaining, format_trigger_time
-from app.paths import ICON_PATH, LAUNCH_BAT, PROJECT_ROOT
+from app.paths import ICON_PATH, LAUNCH_TARGET, LAUNCH_WORKDIR
 from app.power import PowerExecutor, supports_system_abort
 from app.scheduler import Scheduler
 from app.theme import color, stylesheet
@@ -374,8 +374,8 @@ class MainWindow(QMainWindow):
         self._store.save(cfg)
         self._autostart.sync(
             checked,
-            target=LAUNCH_BAT,
-            workdir=PROJECT_ROOT,
+            target=LAUNCH_TARGET,
+            workdir=LAUNCH_WORKDIR,
             icon=ICON_PATH,
         )
 

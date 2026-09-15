@@ -14,7 +14,7 @@ from app.autostart import Autostart
 from app.config import ConfigStore
 from app.confirm import ConfirmDialog
 from app.formatting import format_remaining
-from app.paths import CONFIG_PATH, ICON_PATH, LAUNCH_BAT, LOG_PATH, PROJECT_ROOT
+from app.paths import CONFIG_PATH, ICON_PATH, LAUNCH_TARGET, LAUNCH_WORKDIR, LOG_PATH
 from app.power import PowerExecutor, supports_system_abort
 from app.scheduler import Scheduler
 from app.tray import TrayIcon
@@ -90,9 +90,9 @@ class AppController:
 
         if want and not has:
             logger.info("检测到自启快捷方式缺失，按配置重建")
-            self.autostart.sync(True, target=LAUNCH_BAT, workdir=PROJECT_ROOT, icon=ICON_PATH)
+            self.autostart.sync(True, target=LAUNCH_TARGET, workdir=LAUNCH_WORKDIR, icon=ICON_PATH)
         elif not want and has:
-            self.autostart.sync(False, target=LAUNCH_BAT, workdir=PROJECT_ROOT, icon=ICON_PATH)
+            self.autostart.sync(False, target=LAUNCH_TARGET, workdir=LAUNCH_WORKDIR, icon=ICON_PATH)
 
     def _refresh_tray(self) -> None:
         now = datetime.now()

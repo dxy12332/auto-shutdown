@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app.paths import ICON_PATH, LAUNCH_BAT, PROJECT_ROOT  # noqa: E402
+from app.paths import ICON_PATH, LAUNCH_TARGET, LAUNCH_WORKDIR  # noqa: E402
 
 SHORTCUT_NAME = "定时关机.lnk"
 CREATE_NO_WINDOW = 0x08000000
@@ -40,8 +40,8 @@ def main() -> int:
     lnk = desktop_dir() / SHORTCUT_NAME
     script = _PS_TEMPLATE.format(
         lnk=ps_quote(lnk),
-        target=ps_quote(LAUNCH_BAT),
-        workdir=ps_quote(PROJECT_ROOT),
+        target=ps_quote(LAUNCH_TARGET),
+        workdir=ps_quote(LAUNCH_WORKDIR),
         icon=ps_quote(ICON_PATH),
     )
     completed = subprocess.run(
