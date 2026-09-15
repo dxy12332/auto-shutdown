@@ -114,6 +114,17 @@ def test_runner_exception_is_swallowed_and_reported(caplog):
     assert "shutdown.exe not found" in caplog.text
 
 
+def test_live_mode_logs_successful_command(caplog):
+    """真实模式成功时也必须留痕，否则日志无法证明命令真的下达了。"""
+    caplog.set_level(logging.INFO)
+    executor = PowerExecutor(dry_run=False, runner=lambda argv: 0)
+
+    assert executor.run(build_abort_command()) is True
+
+    assert "已执行" in caplog.text
+    assert "shutdown.exe /a" in caplog.text
+
+
 def test_executor_helpers_construct_expected_commands():
     seen = []
     executor = PowerExecutor(dry_run=False, runner=lambda argv: seen.append(argv) or 0)

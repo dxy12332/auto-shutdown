@@ -562,6 +562,17 @@ def test_runner_exception_is_swallowed_and_reported(caplog):
     assert "shutdown.exe not found" in caplog.text
 
 
+def test_live_mode_logs_successful_command(caplog):
+    """真实模式成功时也必须留痕，否则日志无法证明命令真的下达了。"""
+    caplog.set_level(logging.INFO)
+    executor = PowerExecutor(dry_run=False, runner=lambda argv: 0)
+
+    assert executor.run(build_abort_command()) is True
+
+    assert "已执行" in caplog.text
+    assert "shutdown.exe /a" in caplog.text
+
+
 def test_executor_helpers_construct_expected_commands():
     seen = []
     executor = PowerExecutor(dry_run=False, runner=lambda argv: seen.append(argv) or 0)
@@ -743,17 +754,23 @@ class PowerExecutor:
             return True
 
         if command.via_api:
-            return _call_set_suspend_state(command.hibernate)
+            result = _call_set_suspend_state(command.hibernate)
+            logger.info("已执行: (Win32 API) | %s，结果=%s", command.description, result)
+            return result
 
+        shown = " ".join(command.argv)
         try:
             code = self._runner(command.argv)
         except Exception as exc:
-            logger.error("执行 %s 失败: %s", command.argv, exc)
+            logger.error("执行 %s 失败: %s", shown, exc)
             return False
 
         if code != 0:
-            logger.warning("命令 %s 退出码 %s", command.argv, code)
+            logger.warning("命令 %s 退出码 %s", shown, code)
             return False
+
+        # 成功也必须留痕：否则日志无法证明命令真的下达到了系统
+        logger.info("已执行: %s | %s", shown, command.description)
         return True
 
     def arm(self, action: str, grace_seconds: int, force: bool) -> bool:
