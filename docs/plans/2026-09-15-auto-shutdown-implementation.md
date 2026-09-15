@@ -2501,7 +2501,7 @@ git commit -m "feat: 主窗口与时间格式化"
   - `app.tray.TrayIcon(window, on_cancel, on_quit, parent=None)` 类（`QSystemTrayIcon`）：
     - `update_status(text: str) -> None`
     - `set_theme(theme: str) -> None`
-  - `main.build_application(argv) -> tuple[QApplication, AppController]`
+  - `main.parse_args(argv: list[str]) -> tuple[argparse.Namespace, list[str]]`
   - `main.AppController` 类：方法 `handle_trigger(trigger) -> None`、`cancel_current() -> None`、`quit_app() -> None`
 
 - [ ] **Step 1: 实现托盘图标**
@@ -2704,24 +2704,24 @@ class AppController:
                 logger.info("用户取消，已撤销系统排程")
             else:
                 logger.info("用户取消，未执行 %s", action)
-            self.scheduler.refresh()
-            self.window.refresh_status()
-            return
-
-        if result == ConfirmDialog.RESULT_NOW:
+        elif result == ConfirmDialog.RESULT_NOW:
             # 已有排程时再次 shutdown 会返回 1190，必须先撤销
             if supports_system_abort(action):
                 self.executor.abort()
             self.executor.execute_now(action, force)
             logger.info("用户要求立即执行 %s", action)
-            return
-
-        # 超时：关机/重启的系统排程继续跑；其余动作由应用补上
-        if not supports_system_abort(action):
-            self.executor.execute_now(action, force)
-            logger.info("超时，执行 %s", action)
         else:
-            logger.info("超时，交由系统排程执行 %s", action)
+            # 超时：关机/重启的系统排程继续跑；其余动作由应用补上
+            if not supports_system_abort(action):
+                self.executor.execute_now(action, force)
+                logger.info("超时，执行 %s", action)
+            else:
+                logger.info("超时，交由系统排程执行 %s", action)
+
+        # 无论走哪条分支都必须重排下一次：一次性定时已被消耗，
+        # 而「每天重复」靠这一步才会滚动到明天的同一时刻。
+        self.scheduler.refresh()
+        self.window.refresh_status()
 
     def cancel_current(self) -> None:
         """主界面/托盘上的「取消关机」。"""
