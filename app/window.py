@@ -292,6 +292,15 @@ class MainWindow(QMainWindow):
 
         self.apply_theme(cfg.theme)
 
+    def reload_from_config(self) -> None:
+        """外部改动了配置后（例如点了「取消关机」），让控件与配置重新对齐。
+
+        没有这一步，「每天」复选框会停留在勾选状态，用户看到的是
+        「取消没生效」——尽管配置其实已经改了。
+        """
+        self._load_from_config()
+        self.refresh_status()
+
     def current_theme(self) -> str:
         return self._theme
 

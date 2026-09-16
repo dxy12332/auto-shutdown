@@ -11,7 +11,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from app.autostart import Autostart
-from app.config import ConfigStore
+from app.config import ConfigStore, clear_all_schedules
 from app.confirm import ConfirmDialog
 from app.formatting import format_remaining
 from app.paths import (
@@ -188,13 +188,13 @@ class AppController:
         if supports_system_abort(cfg.action):
             self.executor.abort()
 
-        cfg.oneoff.enabled = False
-        cfg.oneoff.target = ""
-        cfg.oneoff.label = ""
+        clear_all_schedules(cfg)
         self.store.save(cfg)
         self.scheduler.refresh()
-        self.window.refresh_status()
-        logger.info("已取消所有已排定的关机")
+        # 必须让界面也重新对齐：否则「每天」复选框还勾着，
+        # 用户看到的就是「点了没反应」
+        self.window.reload_from_config()
+        logger.info("已取消所有排定的关机（含每天重复）")
 
     def quit_app(self) -> None:
         cfg = self.store.load()

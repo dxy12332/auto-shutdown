@@ -110,6 +110,19 @@ def normalize(raw: Any) -> Config:
     )
 
 
+def clear_all_schedules(cfg: Config) -> Config:
+    """清空所有排定的定时：一次性与每天重复都要清。
+
+    「取消关机」的语义是把界面上显示的那条排定撤掉。只清其中一半，
+    按钮看起来就会毫无反应——因为另一半规则仍然在生效。
+    """
+    cfg.oneoff.enabled = False
+    cfg.oneoff.target = ""
+    cfg.oneoff.label = ""
+    cfg.daily.enabled = False
+    return cfg
+
+
 class ConfigStore:
     """配置文件读写。写入采用「临时文件 + 替换」，中途断电也不会损坏原配置。"""
 
