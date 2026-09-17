@@ -92,7 +92,9 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name="定时关机",
+    # 用英文名：GitHub 的 Release 附件名不接受非 ASCII 字符，
+    # 传中文名会被静默替换成 default.exe。本地就产出正确名字可省掉改名。
+    name="AutoShutdown-v1.0.1",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
